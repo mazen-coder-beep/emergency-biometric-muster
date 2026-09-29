@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Muster & Life Safety Dashboard</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    .pulse-red { animation: pulse-red 2s infinite; }
+    .pulse-purple { animation: pulse-purple 1.8s infinite; }
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    @keyframes pulse-purple {
+      0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.8); }
+      70% { box-shadow: 0 0 0 12px rgba(168, 85, 247, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+    }
+    .grid-bg {
+      background-size: 20px 20px;
+      background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    }
+  </style>
+</head>
+<body class="bg-[#0f172a] text-slate-100 antialiased min-h-screen p-4 md:p-6">
+
+  <!-- Header Banner -->
+  <header class="bg-[#1e293b] border border-slate-700 rounded-2xl p-4 md:p-6 mb-6 shadow-md">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-500 font-bold text-xl pulse-red">
+          🚨
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl md:text-2xl font-bold tracking-tight">Emergency & Police Forensics Dashboard</h1>
+            <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-red-500/20 text-red-400 border border-red-500/30">ACTIVE FIRE & SECURITY ALERT</span>
+          </div>
+          <p class="text-sm text-slate-400">Facility: HQ Building 4 • Hotzone Perimeter Control & Visitor Tracking</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="simulateLobbyVisitor()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-700 hover:bg-blue-600 text-white transition flex items-center gap-1.5 shadow-sm">
+          <span>🏨</span> Visitor Enters Lobby (Allowed)
+        </button>
+        <button onclick="simulateHotzoneIntrusion()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-700 hover:bg-purple-600 text-white transition flex items-center gap-1.5 shadow-sm pulse-purple">
+          <span>🔥</span> Visitor Enters Hotzone (ALERT!)
+        </button>
+        <button onclick="simulateTurnstileCheckIn()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white transition flex items-center gap-1.5 shadow-sm">
+          <span>🚪</span> Face Scan Turnstile
+        </button>
+        <button onclick="exportPoliceBrief()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white transition flex items-center gap-1.5 shadow-sm">
+          <span>🚓</span> Export Police Brief
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 md:gap-4 mt-6">
+      <div class="bg-[#0f172a] border border-slate-700 rounded-xl p-3.5">
+        <span class="text-xs text-slate-400 font-medium">Inside Building (Checked-In)</span>
+        <div class="text-2xl font-extrabold mt-1 text-slate-100" id="stat-total">14</div>
+        <span class="text-[10px] text-slate-400">Employees on-site</span>
+      </div>
+
+      <div class="bg-[#0f172a] border border-slate-700 rounded-xl p-3.5">
+        <span class="text-xs text-slate-400 font-medium">Public Lobby Visitors</span>
+        <div class="text-2xl font-extrabold text-blue-400 mt-1" id="stat-visitors">1</div>
+        <span class="text-[10px] text-blue-400/80 font-medium">Public zone (No Alert)</span>
+      </div>
+
+      <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-3.5">
+        <span class="text-xs text-red-400 font-semibold">Missing Registered</span>
+        <div class="text-2xl font-extrabold text-red-400 mt-1" id="stat-missing">10</div>
+        <span class="text-[10px] text-red-400/80 font-medium">Inside during fire</span>
+      </div>
+
+      <div class="bg-purple-500/15 border border-purple-500/40 rounded-xl p-3.5">
+        <span class="text-xs text-purple-300 font-bold">Hotzone Intruders</span>
+        <div class="text-2xl font-extrabold text-purple-400 mt-1" id="stat-hotzone-intruders">1</div>
+        <span class="text-[10px] text-purple-300/80 font-medium">Restricted area breach</span>
+      </div>
+
+      <div class="bg-[#0f172a] border border-slate-700 rounded-xl p-3.5">
+        <span class="text-xs text-slate-400 font-medium">Evacuation Rate</span>
+        <div class="text-2xl font-extrabold text-indigo-400 mt-1" id="stat-percent">28.5%</div>
+        <div class="w-full bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div id="stat-progress-bar" class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: 28.5%"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Security Rule Notice -->
+  <div class="bg-indigo-950/60 border border-indigo-500/40 rounded-2xl p-4 mb-6 backdrop-blur flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+    <div class="flex items-center gap-3">
+      <span class="text-xl p-2 rounded-xl bg-indigo-500/20 text-indigo-300 font-bold">🛡️</span>
+      <div>
+        <h3 class="font-bold text-xs sm:text-sm text-indigo-200">ACTIVE PERIMETER RULE: Public vs Restricted Hotzone Rules</h3>
+        <p class="text-[11px] text-indigo-300/80">
+          • <span class="text-blue-300 font-semibold">Lobby / Reception</span> = Public Visitor Zone (Visitors permitted, no intruder alert triggered).<br>
+          • <span class="text-purple-300 font-semibold">Server Rooms / Labs / Exec Suites</span> = RESTRICTED HOTZONES (Unregistered presence triggers Police Forensic Breach Alert).
+        </p>
+      </div>
+    </div>
+    <div id="ws-status" class="text-[11px] font-mono px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Offline (Simulation Mode)
+    </div>
+  </div>
+
+  <!-- Unregistered Hotzone Alert Banner -->
+  <div id="hotzone-alert-banner" class="hidden bg-purple-950/90 border border-purple-500 rounded-2xl p-4 mb-6 backdrop-blur flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl p-2 rounded-xl bg-purple-500/20 text-purple-300 font-bold pulse-purple">🔥</span>
+      <div>
+        <h3 class="font-bold text-sm text-purple-200">POLICE FORENSIC ALERT: Restricted Hotzone Breach!</h3>
+        <p class="text-xs text-purple-300/80" id="hotzone-banner-desc">An unregistered individual moved into a restricted hotzone.</p>
+      </div>
+    </div>
+    <button onclick="setRosterFilter('hotzone')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition whitespace-nowrap">
+      Inspect Hotzone Suspect
+    </button>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Floor Plan Map (8 cols) -->
+    <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-6">
+      
+      <div class="bg-[#1e293b] border border-slate-700 rounded-2xl p-5 shadow-sm flex-1 flex flex-col">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="font-bold text-lg flex items-center gap-2">
+              <span>🗺️</span> Building Floor Plan & Zone Security Mapping
+            </h2>
+            <p class="text-xs text-slate-400">Visualizing Public Visitor Zones vs Restricted Hotzones</p>
+          </div>
+
+          <div class="flex items-center gap-1 bg-[#0f172a] p-1 rounded-xl border border-slate-700 self-start sm:self-auto">
+            <button onclick="switchFloor(1)" id="btn-floor-1" class="floor-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition">Floor 1</button>
+            <button onclick="switchFloor(2)" id="btn-floor-2" class="floor-btn px-3 py-1.5 text-xs font-semibold rounded-lg hover:bg-slate-700 text-slate-400 transition">Floor 2</button>
+            <button onclick="switchFloor(3)" id="btn-floor-3" class="floor-btn px-3 py-1.5 text-xs font-semibold rounded-lg hover:bg-slate-700 text-slate-400 transition">Floor 3</button>
+          </div>
+        </div>
+
+        <div class="relative w-full h-[380px] bg-[#0f172a] grid-bg border border-slate-700 rounded-xl overflow-hidden p-4 flex-1 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-[11px] bg-[#1e293b]/90 backdrop-blur border border-slate-700 p-2 rounded-lg z-10 flex-wrap gap-2">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-400 inline-block"></span> Public Zone (Lobby)</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block pulse-red"></span> Registered Missing</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block pulse-purple"></span> Hotzone Intruder</span>
+            </div>
+            <span class="font-mono text-slate-400" id="current-floor-title">ACTIVE VIEW: FLOOR 1</span>
+          </div>
+
+          <div class="absolute inset-0 pt-14 p-4 grid grid-cols-3 grid-rows-2 gap-3" id="floor-layout">
+            <!-- Dynamic Floor Render -->
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-[#1e293b] border border-slate-700 rounded-2xl p-5 shadow-sm">
+        <h3 class="font-bold text-sm mb-3 flex items-center justify-between">
+          <span class="flex items-center gap-2"><span>⚡</span> Live Zone Perimeter Audit Log</span>
+          <span class="text-[10px] font-mono text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">PERIMETER RULES ACTIVE</span>
+        </h3>
+        <div class="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs font-mono" id="live-camera-feed">
+          <!-- Live Feed -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Occupant & Intruder Roster (4 cols) -->
+    <div class="lg:col-span-5 xl:col-span-4 flex flex-col">
+      <div class="bg-[#1e293b] border border-slate-700 rounded-2xl p-5 shadow-sm flex-1 flex flex-col">
+        
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="font-bold text-lg text-red-400 flex items-center gap-2">
+              <span>📋</span> Occupant & Intruder Roster
+            </h2>
+            <p class="text-xs text-slate-400">Zone security classification status</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1 mb-3">
+          <button onclick="setRosterFilter('all')" id="tab-all" class="roster-tab flex-1 py-1.5 text-[10px] font-semibold rounded-lg bg-indigo-600 text-white transition text-center">All</button>
+          <button onclick="setRosterFilter('missing')" id="tab-missing" class="roster-tab flex-1 py-1.5 text-[10px] font-semibold rounded-lg bg-[#0f172a] text-slate-400 transition text-center">Missing</button>
+          <button onclick="setRosterFilter('visitor')" id="tab-visitor" class="roster-tab flex-1 py-1.5 text-[10px] font-semibold rounded-lg bg-blue-950/40 text-blue-300 border border-blue-500/20 transition text-center">Lobby Guests</button>
+          <button onclick="setRosterFilter('hotzone')" id="tab-hotzone" class="roster-tab flex-1 py-1.5 text-[10px] font-semibold rounded-lg bg-purple-950/60 text-purple-300 border border-purple-500/40 transition text-center">Hotzone Breaches</button>
+        </div>
+
+        <div class="relative mb-3">
+          <input type="text" id="roster-search" oninput="renderRoster()" placeholder="Search name, zone, or status..." class="w-full bg-[#0f172a] border border-slate-700 text-xs rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-indigo-500 text-slate-100 placeholder-slate-500" />
+          <span class="absolute left-2.5 top-2.5 text-xs text-slate-500">🔍</span>
+        </div>
+
+        <div class="space-y-3 overflow-y-auto max-h-[480px] pr-1 flex-1" id="roster-list">
+          <!-- Roster Items -->
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let occupants = [
+      { id: 101, name: "Dr. Aris Thorne", type: "REGISTERED", role: "Lead Systems Engineer", status: "MISSING", floor: 2, zone: "Server Room B", isHotzone: true, camera: "CAM-204", entryTime: "08:14:02 AM", avatar: "👨‍💻" },
+      { id: 102, name: "Elena Rostova", type: "REGISTERED", role: "Operations Director", status: "MISSING", floor: 3, zone: "Executive Suite 301", isHotzone: true, camera: "CAM-301", entryTime: "08:22:15 AM", avatar: "👩‍💼" },
+      { id: 103, name: "Marcus Vance", type: "REGISTERED", role: "DevOps Technician", status: "MISSING", floor: 1, zone: "North Stairwell Entrance", isHotzone: false, camera: "CAM-102", entryTime: "08:45:00 AM", avatar: "👨‍🔧" },
+      { id: 104, name: "Sarah Lin", type: "REGISTERED", role: "Security Analyst", status: "MISSING", floor: 2, zone: "Research Lab 2B", isHotzone: true, camera: "CAM-209", entryTime: "08:50:33 AM", avatar: "👩‍🔬" },
+      { id: 105, name: "David Kim", type: "REGISTERED", role: "Product Manager", status: "MISSING", floor: 1, zone: "East Corridor", isHotzone: false, camera: "CAM-105", entryTime: "09:01:10 AM", avatar: "👨‍💼" },
+      { id: 106, name: "Amara Oke", type: "REGISTERED", role: "QA Engineer", status: "MISSING", floor: 3, zone: "Conference Room 3A", isHotzone: true, camera: "CAM-304", entryTime: "09:05:44 AM", avatar: "👩‍💻" },
+      { id: 107, name: "Robert Chen", type: "REGISTERED", role: "Hardware Architect", status: "MISSING", floor: 2, zone: "Testing Lab 210", isHotzone: true, camera: "CAM-203", entryTime: "09:12:00 AM", avatar: "👨‍🔬" },
+      { id: 108, name: "Hannah Abbott", type: "REGISTERED", role: "HR Generalist", status: "MISSING", floor: 1, zone: "Break Room 102", isHotzone: false, camera: "CAM-108", entryTime: "09:15:20 AM", avatar: "👩‍💼" },
+      { id: 111, name: "Lucas Miller", type: "REGISTERED", role: "Frontend Dev", status: "SAFE", floor: 0, zone: "Assembly Zone Alpha", isHotzone: false, camera: "OUTDOOR-CAM-01", entryTime: "08:30:00 AM", avatar: "👨‍💻" },
+      { id: 112, name: "Sophia Patel", type: "REGISTERED", role: "UX Designer", status: "SAFE", floor: 0, zone: "Assembly Zone Alpha", isHotzone: false, camera: "OUTDOOR-CAM-01", entryTime: "08:35:12 AM", avatar: "👩‍🎨" },
+      { id: 801, name: "VISITOR (Guest Badge #42)", type: "VISITOR_LOBBY", role: "Lobby / Waiting Area Visitor", status: "VISITOR_ALLOWED", floor: 1, zone: "Lobby & Reception", isHotzone: false, camera: "CAM-101", entryTime: "09:40:15 AM", avatar: "👤" },
+      { id: 999, name: "UNREGISTERED INTRUDER #01", type: "UNREGISTERED_HOTZONE", role: "BREACH: Present in Restricted Hotzone", status: "HOTZONE_BREACH", floor: 2, zone: "Server Room B", isHotzone: true, camera: "CAM-204", entryTime: "UNREGISTERED INTRUSION", avatar: "🕵️‍♂️" }
+    ];
+
+    let currentFloor = 1;
+    let currentFilter = 'all';
+
+    const floorZones = {
+      1: [
+        { name: "Lobby & Reception", cam: "CAM-101", isHotzone: false },
+        { name: "Break Room 102", cam: "CAM-108", isHotzone: false },
+        { name: "East Corridor", cam: "CAM-105", isHotzone: false },
+        { name: "North Stairwell", cam: "CAM-102", isHotzone: false },
+        { name: "Main Auditorium", cam: "CAM-104", isHotzone: false },
+        { name: "South Exit Vestibule", cam: "CAM-106", isHotzone: false }
+      ],
+      2: [
+        { name: "Server Room B", cam: "CAM-204", isHotzone: true },
+        { name: "Research Lab 2B", cam: "CAM-209", isHotzone: true },
+        { name: "Testing Lab 210", cam: "CAM-203", isHotzone: true },
+        { name: "Eng Open Office", cam: "CAM-201", isHotzone: false },
+        { name: "West Restrooms", cam: "CAM-207", isHotzone: false },
+        { name: "Stairwell 2 South", cam: "CAM-202", isHotzone: false }
+      ],
+      3: [
+        { name: "Executive Suite 301", cam: "CAM-301", isHotzone: true },
+        { name: "Conference Room 3A", cam: "CAM-304", isHotzone: true },
+        { name: "Finance Office", cam: "CAM-302", isHotzone: true },
+        { name: "VP Workspace", cam: "CAM-303", isHotzone: true },
+        { name: "Stairwell 3 North", cam: "CAM-305", isHotzone: false },
+        { name: "East Terrace Door", cam: "CAM-306", isHotzone: false }
+      ]
+    };
+
+    const initialLogs = [
+      { time: "19:05:10", msg: "🔥 [HOTZONE BREACH ALERT] CAM-204 detected UNREGISTERED FACE in Server Room B!", type: "hotzone" },
+      { time: "19:04:20", msg: "🌐 [PUBLIC ZONE LOG] CAM-101 detected Unregistered Visitor in Lobby -> ALLOWED.", type: "visitor" },
+      { time: "19:03:00", msg: "[TURNSTILE 01] Face Scan Match: Dr. Aris Thorne -> DB Logged IN_BUILDING", type: "entry" }
+    ];
+
+    function init() {
+      checkHotzoneBanner();
+      renderFloorPlan();
+      renderRoster();
+      renderLogs();
+      updateStats();
+      setupWebSocket();
+    }
+
+    // Connect to WebSocket Server if available
+    function setupWebSocket() {
+      try {
+        const ws = new WebSocket("ws://localhost:8000/ws");
+        ws.onopen = () => {
+          document.getElementById('ws-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Live Backend Connected`;
+          document.getElementById('ws-status').className = `text-[11px] font-mono px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5`;
+        };
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === 'EVENT') {
+            addLog(data.msg, data.eventType);
+            if (data.occupant) {
+              occupants.unshift(data.occupant);
+              updateStats();
+              renderRoster();
+              renderFloorPlan();
+              checkHotzoneBanner();
+            }
+          }
+        };
+      } catch (e) {
+        console.log("WebSocket offline, using simulation mode.");
+      }
+    }
+
+    function checkHotzoneBanner() {
+      const breaches = occupants.filter(o => o.type === 'UNREGISTERED_HOTZONE').length;
+      const banner = document.getElementById('hotzone-alert-banner');
+      if (breaches > 0) {
+        banner.classList.remove('hidden');
+        document.getElementById('hotzone-banner-desc').innerText = `${breaches} unregistered individual(s) breached restricted hotzones. Forensics saved for police.`;
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function switchFloor(floor) {
+      currentFloor = floor;
+      document.querySelectorAll('.floor-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white');
+        btn.classList.add('hover:bg-slate-700', 'text-slate-400');
+      });
+      const activeBtn = document.getElementById(`btn-floor-${floor}`);
+      activeBtn.classList.add('bg-indigo-600', 'text-white');
+      activeBtn.classList.remove('hover:bg-slate-700', 'text-slate-400');
+      
+      document.getElementById('current-floor-title').innerText = `ACTIVE VIEW: FLOOR ${floor}`;
+      renderFloorPlan();
+    }
+
+    function renderFloorPlan() {
+      const layoutContainer = document.getElementById('floor-layout');
+      const zones = floorZones[currentFloor];
+      
+      layoutContainer.innerHTML = zones.map(z => {
+        const missingPersons = occupants.filter(o => o.status === 'MISSING' && o.floor === currentFloor && o.zone.includes(z.name.split(' ')[0]));
+        const hotzoneIntruders = occupants.filter(o => o.type === 'UNREGISTERED_HOTZONE' && o.floor === currentFloor && o.zone.includes(z.name.split(' ')[0]));
+        const lobbyVisitors = occupants.filter(o => o.type === 'VISITOR_LOBBY' && o.floor === currentFloor && o.zone.includes(z.name.split(' ')[0]));
+        
+        const hasHotzoneBreach = hotzoneIntruders.length > 0;
+        const hasMissing = missingPersons.length > 0;
+        const hasVisitor = lobbyVisitors.length > 0;
+
+        let cardStyle = "bg-emerald-500/5 border-emerald-500/20";
+        if (hasHotzoneBreach) {
+          cardStyle = "bg-purple-950/50 border-purple-500/80 pulse-purple";
+        } else if (hasMissing) {
+          cardStyle = "bg-red-500/10 border-red-500/40";
+        } else if (hasVisitor) {
+          cardStyle = "bg-blue-950/30 border-blue-500/40";
+        }
+
+        return `
+          <div class="border rounded-xl p-3 flex flex-col justify-between relative transition-all ${cardStyle}">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-1">
+                  <span class="text-[9px] font-mono px-1 py-0.2 rounded ${hasHotzoneBreach ? 'bg-purple-500/30 text-purple-300 font-bold' : hasMissing ? 'bg-red-500/20 text-red-400 font-bold' : 'bg-emerald-500/20 text-emerald-400'}">${z.cam}</span>
+                  ${z.isHotzone ? `<span class="text-[8px] bg-red-900/60 text-red-300 border border-red-500/40 px-1 rounded">🔥 HOTZONE</span>` : `<span class="text-[8px] bg-blue-900/40 text-blue-300 border border-blue-500/30 px-1 rounded">🌐 PUBLIC</span>`}
+                </div>
+                <h4 class="font-bold text-xs mt-1 text-slate-100">${z.name}</h4>
+              </div>
+              <span class="w-2.5 h-2.5 rounded-full ${hasHotzoneBreach ? 'bg-purple-500 pulse-purple' : hasMissing ? 'bg-red-500 pulse-red' : hasVisitor ? 'bg-blue-400' : 'bg-emerald-500'}"></span>
+            </div>
+
+            <div class="mt-2 text-[10px]">
+              ${hasHotzoneBreach ? `
+                <div class="text-purple-300 font-extrabold flex items-center gap-1">
+                  <span>🔥</span> BREACH: ${hotzoneIntruders.length} Intruder
+                </div>
+              ` : hasVisitor ? `
+                <div class="text-blue-300 font-semibold flex items-center gap-1">
+                  <span>👤</span> ${lobbyVisitors.length} Guest Visitor
+                </div>
+              ` : hasMissing ? `
+                <div class="text-red-400 font-semibold flex items-center gap-1">
+                  <span>🚨</span> ${missingPersons.length} Employee(s)
+                </div>
+              ` : `
+                <div class="text-emerald-400 font-medium flex items-center gap-1">
+                  <span>✓</span> Zone Cleared
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setRosterFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.roster-tab').forEach(t => {
+        t.classList.remove('bg-indigo-600', 'text-white');
+        t.classList.add('bg-[#0f172a]', 'text-slate-400');
+      });
+      const activeTab = document.getElementById(`tab-${filter}`);
+      if (activeTab) {
+        activeTab.classList.add('bg-indigo-600', 'text-white');
+        activeTab.classList.remove('bg-[#0f172a]', 'text-slate-400');
+      }
+      renderRoster();
+    }
+
+    function renderRoster() {
+      const search = document.getElementById('roster-search').value.toLowerCase();
+      const listContainer = document.getElementById('roster-list');
+
+      let filtered = occupants.filter(o => {
+        const matchesFilter = (currentFilter === 'all') || 
+                              (currentFilter === 'missing' && o.status === 'MISSING') || 
+                              (currentFilter === 'visitor' && o.type === 'VISITOR_LOBBY') || 
+                              (currentFilter === 'hotzone' && o.type === 'UNREGISTERED_HOTZONE');
+        const matchesSearch = o.name.toLowerCase().includes(search) || o.zone.toLowerCase().includes(search) || o.role.toLowerCase().includes(search);
+        return matchesFilter && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">No matching records found.</div>`;
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(o => `
+        <div class="bg-[#0f172a] border ${
+          o.type === 'UNREGISTERED_HOTZONE' 
+            ? 'border-purple-500/70 bg-purple-950/30' 
+            : o.type === 'VISITOR_LOBBY'
+            ? 'border-blue-500/40 bg-blue-950/20'
+            : o.status === 'MISSING' 
+            ? 'border-red-500/30' 
+            : 'border-slate-700'
+        } rounded-xl p-3 flex items-center justify-between gap-3 transition">
+          
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full ${o.type === 'UNREGISTERED_HOTZONE' ? 'bg-purple-500/20 border-purple-500 text-purple-300' : o.type === 'VISITOR_LOBBY' ? 'bg-blue-500/20 border-blue-400 text-blue-300' : 'bg-[#1e293b] border-slate-700'} border flex items-center justify-center text-lg font-bold">
+              ${o.avatar}
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="font-bold text-xs ${o.type === 'UNREGISTERED_HOTZONE' ? 'text-purple-300 font-mono' : o.type === 'VISITOR_LOBBY' ? 'text-blue-300' : ''}">${o.name}</h4>
+                <span class="text-[9px] px-1.5 py-0.2 font-bold rounded ${
+                  o.type === 'UNREGISTERED_HOTZONE' 
+                    ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50' 
+                    : o.type === 'VISITOR_LOBBY'
+                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                    : o.status === 'MISSING' 
+                    ? 'bg-red-500/20 text-red-400' 
+                    : 'bg-emerald-500/20 text-emerald-400'
+                }">${o.type === 'UNREGISTERED_HOTZONE' ? 'HOTZONE BREACH' : o.type === 'VISITOR_LOBBY' ? 'LOBBY GUEST' : o.status}</span>
+              </div>
+              <p class="text-[10px] text-slate-400">${o.role}</p>
+              
+              <div class="text-[10px] font-mono mt-1 text-slate-400">
+                📍 Zone: <span class="${o.isHotzone ? 'text-purple-400 font-bold' : 'text-blue-400 font-semibold'}">${o.zone}</span> (${o.isHotzone ? '🔥 RESTRICTED' : '🌐 PUBLIC'})
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-end gap-1">
+            ${o.type === 'UNREGISTERED_HOTZONE' ? `
+              <button onclick="flagForPolice(${o.id})" class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold rounded-lg transition whitespace-nowrap shadow-sm">
+                Police Frame 📷
+              </button>
+            ` : o.type === 'VISITOR_LOBBY' ? `
+              <span class="text-[10px] text-blue-300 font-medium bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">Public Access</span>
+            ` : o.status === 'MISSING' ? `
+              <button onclick="markSafe(${o.id})" class="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold rounded-lg transition whitespace-nowrap">
+                Mark Safe ✓
+              </button>
+            ` : `
+              <span class="text-xs text-emerald-400 font-bold">✓ Evacuated</span>
+            `}
+          </div>
+
+        </div>
+      `).join('');
+    }
+
+    function simulateLobbyVisitor() {
+      const count = occupants.filter(o => o.type === 'VISITOR_LOBBY').length + 1;
+      const visitor = {
+        id: Date.now(),
+        name: `LOBBY GUEST #${count}`,
+        type: "VISITOR_LOBBY",
+        role: "Visitor in Public Area",
+        status: "VISITOR_ALLOWED",
+        floor: 1,
+        zone: "Lobby & Reception",
+        isHotzone: false,
+        camera: "CAM-101",
+        entryTime: "09:45 AM",
+        avatar: "👤"
+      };
+
+      occupants.unshift(visitor);
+      addLog(`🌐 [PUBLIC ZONE LOG] CAM-101 detected Unregistered Visitor in Lobby -> ALLOWED.`, 'visitor');
+      updateStats();
+      renderRoster();
+      renderFloorPlan();
+    }
+
+    function simulateHotzoneIntrusion() {
+      const count = occupants.filter(o => o.type === 'UNREGISTERED_HOTZONE').length + 1;
+      const hotzoneRooms = [
+        { floor: 2, zone: "Server Room B", cam: "CAM-204" },
+        { floor: 2, zone: "Research Lab 2B", cam: "CAM-209" },
+        { floor: 3, zone: "Executive Suite 301", cam: "CAM-301" }
+      ];
+      const target = hotzoneRooms[Math.floor(Math.random() * hotzoneRooms.length)];
+
+      const intruder = {
+        id: Date.now(),
+        name: `HOTZONE SUSPECT #${count}`,
+        type: "UNREGISTERED_HOTZONE",
+        role: "ALERT: Face in Restricted Hotzone",
+        status: "HOTZONE_BREACH",
+        floor: target.floor,
+        zone: target.zone,
+        isHotzone: true,
+        camera: target.cam,
+        entryTime: "UNAUTHORIZED BREACH DETECTED",
+        avatar: "🕵️‍♂️"
+      };
+
+      occupants.unshift(intruder);
+      addLog(`🔥 [HOTZONE BREACH ALERT] Camera ${target.cam} detected UNREGISTERED FACE in ${target.zone}!`, 'hotzone');
+      
+      checkHotzoneBanner();
+      updateStats();
+      renderRoster();
+      renderFloorPlan();
+    }
+
+    function simulateTurnstileCheckIn() {
+      const names = ["Victor Vance", "Siddharth Rao", "Nadia Al-Mansoor"];
+      const randomName = names[Math.floor(Math.random() * names.length)];
+      const newEmp = {
+        id: Date.now(),
+        name: randomName,
+        type: "REGISTERED",
+        role: "Software Architect",
+        status: "MISSING",
+        floor: 1,
+        zone: "East Corridor",
+        isHotzone: false,
+        camera: "CAM-105",
+        entryTime: `${new Date().toLocaleTimeString()} (Scan OK)`,
+        avatar: "👨‍💼"
+      };
+
+      occupants.unshift(newEmp);
+      addLog(`[FACE ID TURNSTILE 01] Face Vector Match: ${randomName} -> Logged IN_BUILDING.`, 'entry');
+      updateStats();
+      renderRoster();
+      renderFloorPlan();
+    }
+
+    function markSafe(id) {
+      const o = occupants.find(item => item.id === id);
+      if (o) {
+        o.status = "SAFE";
+        o.zone = "Assembly Zone Outdoor";
+        addLog(`[MANUAL OVERRIDE] Officer marked ${o.name} as SAFE.`, 'safe');
+        updateStats();
+        renderRoster();
+        renderFloorPlan();
+      }
+    }
+
+    function flagForPolice(id) {
+      const o = occupants.find(item => item.id === id);
+      alert(`[POLICE EVIDENCE LOGGED]\nHigh-resolution face frame, timestamp, camera (${o.camera}), and zone (${o.zone}) saved for Police Arson Investigation.`);
+    }
+
+    function updateStats() {
+      const checkedInTotal = occupants.filter(o => o.type === 'REGISTERED').length;
+      const safeCount = occupants.filter(o => o.status === 'SAFE').length;
+      const missingCount = occupants.filter(o => o.type === 'REGISTERED' && o.status === 'MISSING').length;
+      const visitorsCount = occupants.filter(o => o.type === 'VISITOR_LOBBY').length;
+      const hotzoneCount = occupants.filter(o => o.type === 'UNREGISTERED_HOTZONE').length;
+
+      document.getElementById('stat-total').innerText = checkedInTotal;
+      document.getElementById('stat-visitors').innerText = visitorsCount;
+      document.getElementById('stat-safe').innerText = safeCount;
+      document.getElementById('stat-missing').innerText = missingCount;
+      document.getElementById('stat-hotzone-intruders').innerText = hotzoneCount;
+
+      const pct = checkedInTotal > 0 ? ((safeCount / checkedInTotal) * 100).toFixed(1) : 0;
+      document.getElementById('stat-percent').innerText = `${pct}%`;
+      document.getElementById('stat-progress-bar').style.width = `${pct}%`;
+    }
+
+    function addLog(msg, type) {
+      const now = new Date().toTimeString().split(' ')[0];
+      initialLogs.unshift({ time: now, msg, type });
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('live-camera-feed');
+      container.innerHTML = initialLogs.map(l => `
+        <div class="p-1.5 rounded bg-[#0f172a] border border-slate-700 flex items-center justify-between">
+          <span class="${
+            l.type === 'hotzone' 
+              ? 'text-purple-300 font-bold' 
+              : l.type === 'visitor'
+              ? 'text-blue-300 font-semibold'
+              : l.type === 'entry'
+              ? 'text-emerald-300 font-medium'
+              : 'text-amber-400'
+          }">${l.msg}</span>
+          <span class="text-[9px] text-slate-400 ml-2 font-mono">${l.time}</span>
+        </div>
+      `).join('');
+    }
+
+    function exportPoliceBrief() {
+      const missing = occupants.filter(o => o.status === 'MISSING');
+      const hotzoneIntruders = occupants.filter(o => o.type === 'UNREGISTERED_HOTZONE');
+      const lobbyVisitors = occupants.filter(o => o.type === 'VISITOR_LOBBY');
+
+      let report = `=====================================================\n`;
+      report += `  POLICE & FIREFIGHTER FORENSIC EVIDENCE DOSSIER     \n`;
+      report += `=====================================================\n`;
+      report += `Timestamp: ${new Date().toLocaleString()}\n`;
+      report += `Facility: HQ Building 4\n`;
+      report += `Restricted Hotzone Intrusions: ${hotzoneIntruders.length}\n`;
+      report += `Lobby Visitors (Allowed): ${lobbyVisitors.length}\n`;
+      report += `Missing Registered Employees: ${missing.length}\n\n`;
+
+      report += `--- SECTION 1: RESTRICTED HOTZONE BREACH ALERTS ---\n`;
+      if (hotzoneIntruders.length === 0) {
+        report += `[NO HOTZONE BREACHES DETECTED]\n\n`;
+      } else {
+        hotzoneIntruders.forEach((h, i) => {
+          report += `${i + 1}. ALERT ID: ${h.name}\n`;
+          report += `   BREACH ZONE: Floor ${h.floor} - ${h.zone} (${h.camera})\n`;
+          report += `   STATUS: 🔥 RESTRICTED HOTZONE BREACH\n\n`;
+        });
+      }
+
+      report += `--- SECTION 2: MISSING REGISTERED OCCUPANTS ROSTER ---\n`;
+      missing.forEach((m, i) => {
+        report += `${i + 1}. NAME: ${m.name} (${m.role})\n`;
+        report += `   LAST KNOWN ZONE: Floor ${m.floor} - ${m.zone} (${m.camera})\n\n`;
+      });
+
+      const blob = new Blob([report], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Police_Forensic_Evidence_Brief_${Date.now()}.txt`;
+      a.click();
+    }
+
+    init();
+  </script>
+</body>
+</html>
